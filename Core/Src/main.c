@@ -69,123 +69,6 @@ static void MX_USART1_UART_Init(void);
 extern void initialise_monitor_handles(void);
 #endif
 
-uint8_t b_DS18B20_Received_data;
-uint8_t g_DS18B20_Received_data_buffer[8];
-float g_DS18B20_temp;
-
-uint8_t Temp_LSB, Temp_MSB;
-uint16_t temp;
-
-void UART1_SetBaud(uint32_t baud)
-{
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = baud;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
-    {
-        Error_Handler();
-    };
-}
-
-uint8_t DS18B20_Start(void)
-{
-    uint8_t data = 0xF0;
-    UART1_SetBaud(9600);
-    HAL_UART_Transmit(&huart1, &data, 1, 100);
-
-    if ((HAL_UART_Receive(&huart1, &data, 1, 1000) != HAL_OK) || (data == 0xF0))
-    {
-        // initialization failed
-        LOGGER_ERROR("Couldn't read temperature sensor");
-        return 1;
-    }
-
-    UART1_SetBaud(115200);
-    return 0;
-}
-
-void DS18B20_Init(void)
-{
-    if (DS18B20_Start() == 0)
-    {
-        LOGGER_INFO("Temperature sensor initialized successfully");
-    }
-}
-
-void DS18B20_Write(uint8_t data)
-{
-    uint8_t buffer[8];
-
-    for (uint8_t i = 0; i < 8; ++i)
-    {
-        if (data & (1 << i))
-        {
-            buffer[i] = 0xFF;
-        }
-        else
-        {
-            buffer[i] = 0x00;
-        }
-    }
-
-    HAL_UART_Transmit(&huart1, buffer, 8, 100);
-}
-
-uint8_t DS18B20_Read(void)
-{
-    uint8_t buffer[8];
-    uint8_t received_value = 0;
-
-    for (uint8_t i = 0; i < 8; ++i)
-    {
-        buffer[i] = 0xFF;
-    }
-
-    HAL_UART_Transmit_DMA(&huart1, buffer, 8);
-    HAL_UART_Receive_DMA(&huart1, g_DS18B20_Received_data_buffer, 8);
-
-    while (b_DS18B20_Received_data == false)
-        ;
-
-    for (uint8_t i = 0; i < 8; ++i)
-    {
-        if (g_DS18B20_Received_data_buffer[i] == 0xFF)
-        {
-            received_value |= (1 << i);
-        }
-    }
-
-    b_DS18B20_Received_data = false;
-    return received_value;
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    b_DS18B20_Received_data = true;
-}
-
-void DS18B20_Read_temp(void)
-{
-    DS18B20_Start();
-    DS18B20_Write(0xCC); // send 'Skip ROM' command
-    DS18B20_Write(0x44); // send 'Convert T' command
-
-    DS18B20_Start();
-    DS18B20_Write(0xCC); // send 'Skip ROM' command
-    DS18B20_Write(0xBE); // send 'read scratchpad' command
-
-    Temp_LSB = DS18B20_Read();
-    Temp_MSB = DS18B20_Read();
-
-    temp = (Temp_MSB << 8) | Temp_LSB;
-    g_DS18B20_temp = (float) temp / 16.0;
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -223,10 +106,9 @@ int main(void)
     MX_USART2_UART_Init();
     MX_USART1_UART_Init();
     /* USER CODE BEGIN 2 */
-    DS18B20_Init();
 
     /* Application Init */
-    // app_init();
+    app_init();
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -240,13 +122,12 @@ int main(void)
         /* USER CODE BEGIN 3 */
 
         /* Application Update */
-        // app_update();
+        app_update();
         // send reset signal to sensor, a low pulse for no less than 480 us
         // uint8_t data = 0xF0;
         // HAL_UART_Transmit(&huart1, &data, 1, 100);
-        DS18B20_Read_temp();
-        LOGGER_INFO("%d°C", (int)g_DS18B20_temp);
-        HAL_Delay(2000);
+        // DS18B20_Read_temp();
+        // LOGGER_INFO("%d°C", (int)g_DS18B20_temp);
     }
     /* USER CODE END 3 */
 }

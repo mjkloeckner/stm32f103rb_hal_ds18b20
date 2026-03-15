@@ -12,37 +12,45 @@
 extern "C" {
 #endif
 
-/* Sensor Statechart - State Transition Table */
-/* +-------------------+----------------+-------------+-------------------+-----------------------+
- * | Current           | Event          |             | Next              |                       |
- * | State             | (Parameters)   | [Guard]     | State             | Actions               |
- * |===================+================+=============+===================+=======================|
- * |                   |                |             |                   |                       |
- * +-------------------+----------------+-------------+-------------------+-----------------------+
+/* Sensor Statechart - State Transition Table
+ *
+ * +---------------+----------------------+-------------+--------------+--------------------------+
+ * | Current state | Event                | [Guard]     | Next state   | Actions                  |
+ * +===============+======================+=============+==============+==========================+
+ * |               |                      | [tick == 0] | ST_SEN_BUSY  | DS18B20_Read_temp()      |
+ * + ST_SEN_READY  +----------------------+-------------+--------------+--------------------------+
+ * |               |                      |             | ST_SEN_READY | tick--                   |
+ * +---------------+----------------------+-------------+--------------+--------------------------+
+ * | ST_SEN_BUSY   | EV_DS18B20_CONV_DONE |             | ST_SEN_READY | tick =  TEMP_READ_PERIOD |
+ * +---------------+----------------------+-------------+--------------+--------------------------+
+ *
  */
 
 /* Events to excite Task Sensor */
 typedef enum {
-    EV_BLANK
+    EV_DS18B20_CONV_DONE
 } task_sensor_ev_t;
 
 /* States of Task Sensor */
 typedef enum {
-    ST_BLANK
+    ST_SEN_READY,
+    ST_SEN_BUSY
 } task_sensor_st_t;
 
 /* Identifier of Task Sensor */
 typedef enum {
-    ID_BLANK
+    ID_DS18B20
 } task_sensor_id_t;
 
 typedef struct {
-    void *empty;
+    task_sensor_id_t identifier;
+    UART_HandleTypeDef huart;
 } task_sensor_cfg_t;
 
 typedef struct {
-    task_sensor_id_t identifier;
-    task_sensor_ev_t sig;
+    uint32_t tick;
+    task_sensor_st_t state;
+    task_sensor_ev_t event;
 } task_sensor_dta_t;
 
 extern task_sensor_dta_t task_sensor_dta_list[];

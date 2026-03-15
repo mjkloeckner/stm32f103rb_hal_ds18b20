@@ -15,46 +15,52 @@
 #include "task_sensor_attribute.h"
 #include "task_system_attribute.h"
 #include "task_system_interface.h"
+#include "ds18b20.h"
 
-#define G_TASK_SEN_CNT_INIT     0ul
-#define G_TASK_SEN_TICK_CNT_INI 0ul
-
-#define DEL_BTN_XX_MIN          0ul
-#define DEL_BTN_XX_MED          25ul
-#define DEL_BTN_XX_MAX          50ul
+#define G_TASK_SEN_TICK_CNT_INI   0ul
+#define G_TASK_SEN_TEMP_PERIOD_MS 2000ul
 
 const task_sensor_cfg_t task_sensor_cfg_list[] = {
+    {ID_DS18B20, 0, EV_DS18B20_CONV_DONE}
 };
 
 #define SENSOR_CFG_QTY (sizeof(task_sensor_cfg_list)/sizeof(task_sensor_cfg_t))
 
-task_sensor_dta_t task_sensor_dta_list[] = {0};
+task_sensor_dta_t task_sensor_dta_list[] = {
+    {G_TASK_SEN_TICK_CNT_INI, ST_SEN_READY}
+};
 
 #define SENSOR_DTA_QTY (sizeof(task_sensor_dta_list)/sizeof(task_sensor_dta_t))
 
 void task_sensor_statechart(void);
 
-uint32_t g_task_sensor_cnt;
+uint32_t g_task_sensor_tick;
 
 // this variable is incremented by 1 on every ms by HAL_SysTick
 volatile uint32_t g_task_sensor_tick_cnt;
 
 void task_sensor_init(void *parameters)
 {
+    const task_sensor_cfg_t *p_task_sensor_cfg;
     // task_sensor_dta_t *p_task_sensor_dta;
-    // task_sensor_st_t state;
-    // task_sensor_ev_t event;
 
     LOGGER_INFO("Initializing `task_sensor`...");
 
-    g_task_sensor_cnt = G_TASK_SEN_CNT_INIT;
+    g_task_sensor_tick = G_TASK_SEN_TEMP_PERIOD_MS;
 
     for (uint32_t index = 0; SENSOR_DTA_QTY > index; index++)
     {
-        /* Init every associated sensor variables */
+        p_task_sensor_cfg = &task_sensor_cfg_list[index];
         // p_task_sensor_dta = &task_sensor_dta_list[index];
 
-        // ...
+        switch (p_task_sensor_cfg->identifier) {
+            case ID_DS18B20:
+                DS18B20_Init();
+            break;
+
+            default: break;
+        }
+
     }
 
     LOGGER_INFO("Done initializing `task_sensor`");
@@ -74,8 +80,6 @@ void task_sensor_update(void *parameters)
 
     while (b_time_update_required)
     {
-        g_task_sensor_cnt++;
-
         task_sensor_statechart();
 
         __asm("CPSID i");
@@ -103,8 +107,37 @@ void task_sensor_statechart(void)
         p_task_sensor_cfg = &task_sensor_cfg_list[index];
         p_task_sensor_dta = &task_sensor_dta_list[index];
 
-        // unused
-        (void) p_task_sensor_cfg;
-        (void) p_task_sensor_dta;
+        switch (p_task_sensor_cfg->identifier)
+        {
+            case ID_DS18B20:
+                switch (p_task_sensor_dta->state)
+                {
+                    case ST_SEN_READY:
+                        if (0 == g_task_sensor_tick)
+                        {
+                            DS18B20_Read_temp();
+                            p_task_sensor_dta->event = EV_DS18B20_CONV_DONE;
+                            p_task_sensor_dta->state = ST_SEN_BUSY;
+                        }
+                        else
+                        {
+                            g_task_sensor_tick--;
+                        }
+                    break;
+
+                    case ST_SEN_BUSY:
+                        if (EV_DS18B20_CONV_DONE == p_task_sensor_dta->event)
+                        {
+                            p_task_sensor_dta->state = ST_SEN_READY;
+                            g_task_sensor_tick = G_TASK_SEN_TEMP_PERIOD_MS;
+                        }
+                    break;
+
+                    default: break;
+                }
+            break;
+
+            default: break;
+        }
     }
 }
