@@ -16,10 +16,7 @@
 
 uint8_t b_DS18B20_Received_data;
 uint8_t g_DS18B20_Received_data_buffer[8];
-float g_DS18B20_temp;
-
-uint8_t Temp_LSB, Temp_MSB;
-uint16_t temp;
+// float g_DS18B20_temp;
 // extern UART_HandleTypeDef huart1;
 
 void UART1_SetBaud(uint32_t baud)
@@ -123,8 +120,10 @@ uint8_t DS18B20_Read(void)
     HAL_UART_Transmit_DMA(&huart1, buffer, 8);
     HAL_UART_Receive_DMA(&huart1, g_DS18B20_Received_data_buffer, 8);
 
-    while (b_DS18B20_Received_data == false)
-        ;
+    // while(b_DS18B20_Received_data == false)
+    //     ;
+
+    // b_DS18B20_Received_data = false;
 
     for (uint8_t i = 0; i < 8; ++i)
     {
@@ -134,13 +133,7 @@ uint8_t DS18B20_Read(void)
         }
     }
 
-    b_DS18B20_Received_data = false;
     return received_value;
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-    b_DS18B20_Received_data = true;
 }
 
 void DS18B20_Read_temp(void)
@@ -153,9 +146,9 @@ void DS18B20_Read_temp(void)
     DS18B20_Write(0xCC); // send 'Skip ROM' command
     DS18B20_Write(0xBE); // send 'read scratchpad' command
 
-    Temp_LSB = DS18B20_Read();
-    Temp_MSB = DS18B20_Read();
+    // uint8_t Temp_LSB = DS18B20_Read();
+    // uint8_t Temp_MSB = DS18B20_Read();
 
-    temp = (Temp_MSB << 8) | Temp_LSB;
-    g_DS18B20_temp = (float) temp / 16.0;
+    // uint16_t temp = (Temp_MSB << 8) | Temp_LSB;
+    // g_DS18B20_temp = (float) temp / 16.0;
 }

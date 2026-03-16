@@ -34,7 +34,8 @@ typedef enum {
 /* States of Task Sensor */
 typedef enum {
     ST_SEN_READY,
-    ST_SEN_BUSY
+    ST_SEN_BUSY_WAITING_CONV,
+    ST_SEN_BUSY_WAITING_DMA,
 } task_sensor_st_t;
 
 /* Identifier of Task Sensor */
@@ -44,7 +45,6 @@ typedef enum {
 
 typedef struct {
     task_sensor_id_t identifier;
-    UART_HandleTypeDef huart;
 } task_sensor_cfg_t;
 
 typedef struct {

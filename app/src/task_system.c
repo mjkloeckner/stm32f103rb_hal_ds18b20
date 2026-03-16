@@ -20,8 +20,8 @@
 #define G_TASK_SYS_CNT_INI       0ul
 #define G_TASK_SYS_TICK_CNT_INI  0ul
 
-#define G_LED_PERIOD_MS 2000ul
-#define G_LED_T_ON_MS   1500ul
+#define G_LED_PERIOD_MS 1000ul
+#define G_LED_T_ON_MS   500ul
 
 task_system_dta_t task_system_dta = {
     G_LED_PERIOD_MS, ST_SYS_LED_ON

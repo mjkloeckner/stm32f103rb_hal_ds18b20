@@ -46,7 +46,7 @@ uint32_t g_app_WCET_us; // Worst case execution time historically
 
 volatile uint32_t g_app_tick_cnt;
 
-task_dta_t task_dta_list[TASK_QTY];
+task_dta_t task_dta_list[TASK_QTY] = {0};
 
 void app_init(void)
 {
