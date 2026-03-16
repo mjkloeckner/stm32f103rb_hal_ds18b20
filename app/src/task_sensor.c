@@ -18,8 +18,8 @@
 #include "ds18b20.h"
 
 #define G_TASK_SEN_TICK_CNT_INI   0ul
-#define G_TASK_SEN_TEMP_PERIOD_MS 500ul
-#define G_DS18B20_CONV_TIME_MS    200ul
+#define G_TASK_SEN_TEMP_PERIOD_MS 1000ul
+#define G_DS18B20_CONV_TIME_MS    200ul // ~188ms for 10 bit resolution
 #define G_DS18B20_DMA_TIMEOUT_MS  5000ul
 
 const task_sensor_cfg_t task_sensor_cfg_list[] = {
@@ -36,20 +36,16 @@ task_sensor_dta_t task_sensor_dta_list[] = {
 
 void task_sensor_statechart(void);
 
+// external variables
 volatile extern bool b_DS18B20_Received_data;
 extern uint8_t g_DS18B20_Received_data_buffer[8];
 
+// local global variables
 volatile float g_DS18B20_temp;
 uint32_t g_task_sensor_tick;
 uint8_t Temp_LSB, Temp_MSB;
-uint16_t temp;
 static bool b_DS18B20_Received_data_LSB;
 static const uint8_t buffer[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-
-void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
-{
-    // HAL_UART_Receive_DMA(&huart1, g_DS18B20_Received_data_buffer, 8);
-}
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -216,7 +212,7 @@ void task_sensor_statechart(void)
                             else
                             {
                                 Temp_MSB = received_value;
-                                temp = ((Temp_MSB << 8) | Temp_LSB);
+                                uint16_t temp = ((Temp_MSB << 8) | Temp_LSB);
                                 g_DS18B20_temp = (float) temp / 16.0;
                                 p_task_sensor_dta->state = ST_SEN_READY;
                                 g_task_sensor_tick = G_TASK_SEN_TEMP_PERIOD_MS;
