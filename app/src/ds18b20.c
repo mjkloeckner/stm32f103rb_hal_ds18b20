@@ -38,7 +38,7 @@ void UART1_SetBaud(uint32_t baud)
     };
 }
 
-uint8_t DS18B20_Start(void)
+uint8_t DS18B20_Reset(void)
 {
     uint8_t data = 0xF0;
     UART1_SetBaud(9600);
@@ -57,7 +57,7 @@ uint8_t DS18B20_Start(void)
 
 void DS18B20_Init(void)
 {
-    if (DS18B20_Start() == 0)
+    if (DS18B20_Reset() == 0)
     {
         LOGGER_INFO("Temperature sensor initialized successfully");
     }
@@ -117,11 +117,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void DS18B20_Read_temp(void)
 {
-    DS18B20_Start();
+    DS18B20_Reset();
     DS18B20_Write(0xCC); // send 'Skip ROM' command
     DS18B20_Write(0x44); // send 'Convert T' command
 
-    DS18B20_Start();
+    DS18B20_Reset();
     DS18B20_Write(0xCC); // send 'Skip ROM' command
     DS18B20_Write(0xBE); // send 'read scratchpad' command
 

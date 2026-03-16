@@ -18,7 +18,7 @@ void DS18B20_Init(void);
 void DS18B20_Write(uint8_t data);
 void DS18B20_Read_temp(void);
 uint8_t DS18B20_Read(void);
-uint8_t DS18B20_Start(void);
+uint8_t DS18B20_Reset(void);
 
 #ifdef __cplusplus
 }
