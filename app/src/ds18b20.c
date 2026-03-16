@@ -55,12 +55,40 @@ uint8_t DS18B20_Reset(void)
     return 0;
 }
 
+void DS18B20_SetResolution(uint8_t resolution)
+{
+    uint8_t config;
+
+    switch(resolution)
+    {
+        case 9:  config = 0x1F; break;
+        case 10: config = 0x3F; break;
+        case 11: config = 0x5F; break;
+        case 12: config = 0x7F; break;
+        default: config = 0x7F;
+    }
+
+    DS18B20_Reset();
+    DS18B20_Write(0xCC); // send 'Skip ROM' command
+    DS18B20_Write(0x4E); // send 'write scratchpad' command
+
+    DS18B20_Write(0x00); // TH
+    DS18B20_Write(0x00); // TL
+    DS18B20_Write(config);
+
+    DS18B20_Reset();
+
+    DS18B20_Write(0xCC);   // Skip ROM
+    DS18B20_Write(0x48);   // Write scratchpad to EEPROM
+}
+
 void DS18B20_Init(void)
 {
     if (DS18B20_Reset() == 0)
     {
         LOGGER_INFO("Temperature sensor initialized successfully");
     }
+    DS18B20_SetResolution(10);
 }
 
 void DS18B20_Write(uint8_t data)
